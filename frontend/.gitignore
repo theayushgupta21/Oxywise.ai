@@ -8,11 +8,18 @@ node_modules/
 !.yarn/releases
 !.yarn/versions
 
-# Environment variables
-.env
-.env.local
-.env.*
-!.env.example
+# Environment files
+backend/.env
+frontend/.env.local
+
+# Or ignore all env files
+**/.env
+**/.env.local
+
+
+# Build
+**/.next/
+**/dist/
 
 # Next.js
 .next/
@@ -42,4 +49,3 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-dir /a
