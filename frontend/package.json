@@ -1,0 +1,35 @@
+{
+  "name": "frontent",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint"
+  },
+  "dependencies": {
+    "@react-oauth/google": "^0.13.5",
+    "@react-three/drei": "^10.7.7",
+    "@react-three/fiber": "^9.7.0",
+    "framer-motion": "^12.42.2",
+    "lucide-react": "^1.26.0",
+    "next": "^16.2.12",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "react-icons": "^5.7.0",
+    "socket.io-client": "^4.8.3",
+    "three": "^0.185.1",
+    "zustand": "^5.0.14"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^10.8.0",
+    "eslint-config-next": "^0.2.4",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  }
+}
