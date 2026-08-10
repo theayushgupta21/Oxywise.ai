@@ -1,6 +1,6 @@
 # 🌿 Oxywise.ai
 
-> Smart, AI-powered plant and greenery suggestions to make your home greener — personalized by weather, location, and atmosphere.
+> Smart, AI-powered plant and greenery suggestions to make your home greener  personalized by weather, location, and atmosphere.
 
 ## About
 
