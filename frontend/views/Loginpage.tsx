@@ -2,11 +2,18 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
+import { GoogleLogin } from "@react-oauth/google";
+import { useRouter } from "next/navigation";
+import { googleAuthApi } from "@/lib/api";
 import { Leaf, Mail, Lock, Eye, EyeOff } from "lucide-react";
+// import { Chatbot } from 
 import GardenBackground from "@/components/auth/GardenBackground";
 
 export default function LoginPage() {
     const [showPassword, setShowPassword] = useState(false);
+    const [error, setError] = useState("");
+    const [loading, setLoading] = useState(false);
+    const router = useRouter();
 
     return (
         <main className="relative min-h-screen flex items-center justify-center px-6 py-12">
@@ -37,15 +44,32 @@ export default function LoginPage() {
                 </p>
 
                 {/* Google auth */}
-                <button
-                    type="button"
-                    className="w-full flex items-center justify-center gap-3 border border-gray-200 rounded-xl
-                    py-3 mb-6 font-medium text-sm text-gray-700 bg-white
-                    hover:border-gray-300 hover:shadow-sm transition-all"
-                >
-                    <GoogleIcon />
-                    Continue with Google
-                </button>
+                <div className="mb-6">
+                    <GoogleLogin
+                        onSuccess={async (credentialResponse) => {
+                            if (!credentialResponse.credential) {
+                                setError("Google sign-in failed — no credential received");
+                                return;
+                            }
+                            setError("");
+                            setLoading(true);
+                            try {
+                                const data = await googleAuthApi(credentialResponse.credential);
+                                localStorage.setItem("token", data.token);
+                                router.push("/chatbot");  // ← ye sirf "ab wahan le jao" bolta hai
+                            } catch (err: any) {
+                                setError(err.message);
+                            } finally {
+                                setLoading(false);
+                            }
+                        }}
+                        onError={() => setError("Google sign-in failed")}
+                        width="100%"
+                        text="continue_with"
+                        shape="rectangular"
+
+                    />
+                </div>
 
                 <div className="flex items-center gap-3 mb-6">
                     <div className="flex-1 h-px bg-gray-200" />

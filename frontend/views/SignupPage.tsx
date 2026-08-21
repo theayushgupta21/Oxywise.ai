@@ -1,12 +1,21 @@
 "use client";
 import React, { useState } from "react";
+import { googleAuthApi } from "@/lib/api";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { Leaf, Mail, Lock, User, Eye, EyeOff } from "lucide-react";
 import GardenBackground from "@/components/auth/GardenBackground";
+import { GoogleLogin } from "@react-oauth/google";
 
 export default function SignupPage() {
+    const router = useRouter();
     const [showPassword, setShowPassword] = useState(false);
+    const [name, setName] = useState("");
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
+    const [error, setError] = useState("");
+    const [loading, setLoading] = useState(false);
 
     return (
         <main className="relative min-h-screen flex items-center justify-center px-6 py-12">
@@ -35,16 +44,28 @@ export default function SignupPage() {
                     Create an account to get plant suggestions matched to your home.
                 </p>
 
-                <button
-                    type="button"
-                    className="w-full flex items-center justify-center gap-3 border border-gray-200 rounded-xl
-                    py-3 mb-6 font-medium text-sm text-gray-700 bg-white
-                    hover:border-gray-300 hover:shadow-sm transition-all"
-                >
-                    <GoogleIcon />
-                    Sign up with Google
-                </button>
-
+                <GoogleLogin
+                    onSuccess={async (credentialResponse) => {
+                        if (!credentialResponse.credential) {
+                            setError("Google sign-up failed — no credential received");
+                            return;
+                        }
+                        setError("");
+                        setLoading(true);
+                        try {
+                            const data = await googleAuthApi(credentialResponse.credential);
+                            localStorage.setItem("token", data.token);
+                            router.push("/chatbot");
+                        } catch (err: any) {
+                            setError(err.message);
+                        } finally {
+                            setLoading(false);
+                        }
+                    }}
+                    onError={() => setError("Google sign-up failed")}
+                    text="signup_with"
+                    shape="rectangular"
+                />
                 <div className="flex items-center gap-3 mb-6">
                     <div className="flex-1 h-px bg-gray-200" />
                     <span className="text-xs text-gray-400 font-mono">or</span>
