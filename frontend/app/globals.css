@@ -21,10 +21,17 @@
   }
 }
 
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
-
-  /* Default font */
+  overflow-x: hidden;
   font-family: var(--font-poppins);
 }

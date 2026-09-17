@@ -7,6 +7,8 @@ export default function InputBar() {
     const {
         input,
         setInput,
+        city,
+        setCity,
         sendMessage,
         imageFile,
         setImageFile,
@@ -22,6 +24,7 @@ export default function InputBar() {
     const docInputRef = useRef<HTMLInputElement>(null);
 
     const hasContext = imageFile || docFile || locationOn || weatherOn;
+    const showCityInput = locationOn || weatherOn;
 
     return (
         <div className="border-t border-[#DEE6D2] bg-[#F7F9F2] py-3">
@@ -31,8 +34,19 @@ export default function InputBar() {
                     <div className="flex flex-wrap gap-2 mb-2">
                         {imageFile && <Chip label={`🖼️ ${imageFile.name}`} onRemove={() => setImageFile(null)} />}
                         {docFile && <Chip label={`📎 ${docFile.name}`} onRemove={() => setDocFile(null)} />}
-                        {locationOn && <Chip label="📍 Using current location" onRemove={toggleLocation} />}
-                        {weatherOn && <Chip label="☁️ Weather context on" onRemove={toggleWeather} />}
+                        {locationOn && <Chip label="📍 Location on" onRemove={toggleLocation} />}
+                        {weatherOn && <Chip label="☁️ Weather on" onRemove={toggleWeather} />}
+                    </div>
+                )}
+
+                {showCityInput && (
+                    <div className="mb-2">
+                        <input
+                            value={city}
+                            onChange={(e) => setCity(e.target.value)}
+                            placeholder="Enter your city for location/weather suggestions"
+                            className="w-full rounded-xl border border-[#DEE6D2] bg-white px-3 py-2 text-sm text-[#1F3D1A] outline-none ring-0 placeholder:text-[#9AA893] focus:border-green-600"
+                        />
                     </div>
                 )}
 
@@ -96,7 +110,7 @@ export default function InputBar() {
                 </div>
 
                 <p className="text-center font-mono text-[10.5px] text-[#9AA893] mt-2">
-                    Reference UI only — wire uploads, location, and send to your real backend/API.
+                    Add a city to use location and weather-aware plant recommendations.
                 </p>
             </div>
         </div>

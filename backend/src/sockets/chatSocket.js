@@ -4,6 +4,8 @@ import { getWeatherByCity } from "../services/weatherService.js";
 import { matchPlants } from "../services/plantMatchService.js";
 import Message from "../models/Message.js";
 import Chat from "../models/Chat.js";
+import mongoose from "mongoose";
+import { getWeatherByCoords } from "../services/weatherService.js";
 
 export function registerChatSocket(io) {
     // Runs before every connection — rejects sockets without a valid JWT
@@ -24,19 +26,39 @@ export function registerChatSocket(io) {
         console.log("🔌 Authenticated client connected:", socket.userId);
 
         socket.on("join_chat", async ({ chatId }) => {
-            const chat = await Chat.findOne({ _id: chatId, userId: socket.userId });
-            if (!chat) return socket.emit("error_message", "Chat not found");
-            socket.join(chatId);
+            try {
+                if (!mongoose.isValidObjectId(chatId)) {
+                    return socket.emit("error_message", "Invalid chat id");
+                }
+
+                const chat = await Chat.findOne({ _id: chatId, userId: socket.userId });
+                if (!chat) return socket.emit("error_message", "Chat not found");
+                socket.join(chat.id);
+            } catch (err) {
+                console.error("join_chat error:", err);
+                socket.emit("error_message", "Unable to open chat");
+            }
         });
 
         socket.on("send_message", async (payload) => {
             const { chatId, text, city, weatherOn, locationOn, spaceType } = payload;
 
             try {
-                const chat = await Chat.findOne({ _id: chatId, userId: socket.userId });
-                if (!chat) return socket.emit("error_message", "Chat not found");
+                let chat = null;
+                if (mongoose.isValidObjectId(chatId)) {
+                    chat = await Chat.findOne({ _id: chatId, userId: socket.userId });
+                }
 
-                await Message.create({ chatId, role: "user", text });
+                // New chats may arrive with a client-only id. Never query MongoDB with it.
+                if (!chat) {
+                    chat = await Chat.create({ userId: socket.userId, title: "New chat" });
+                    socket.emit("chat_created", { clientChatId: chatId, chatId: chat.id });
+                }
+
+                const roomId = chat.id;
+                socket.join(roomId);
+
+                await Message.create({ chatId: chat._id, role: "user", text });
 
                 // Auto-title the chat from the first message, like ChatGPT/Claude
                 if (chat.title === "New chat") {
@@ -45,25 +67,30 @@ export function registerChatSocket(io) {
                 chat.updatedAt = new Date();
                 await chat.save();
 
-                io.to(chatId).emit("bot_typing", true);
+                io.to(roomId).emit("bot_typing", true);
 
                 let weatherContext = null;
                 let matchedPlants = null;
 
                 if ((weatherOn || locationOn) && city) {
-                    weatherContext = await getWeatherByCity(city);
-                    matchedPlants = await matchPlants({ weather: weatherContext, space: spaceType });
+                    try {
+                        weatherContext = await getWeatherByCity(city);
+                        matchedPlants = await matchPlants({ weather: weatherContext, space: spaceType });
+                    } catch (weatherErr) {
+                        console.warn("Weather context unavailable:", weatherErr.message || weatherErr);
+                        weatherContext = { city, condition: "unknown", note: "Weather data unavailable right now." };
+                    }
                 }
 
                 const botReply = await getPlantAdvice({ userMessage: text, weatherContext, matchedPlants });
-                const botMsg = await Message.create({ chatId, role: "bot", text: botReply });
+                const botMsg = await Message.create({ chatId: chat._id, role: "bot", text: botReply });
 
-                io.to(chatId).emit("bot_typing", false);
-                io.to(chatId).emit("receive_message", { id: botMsg._id, role: "bot", text: botReply });
+                io.to(roomId).emit("bot_typing", false);
+                io.to(roomId).emit("receive_message", { id: botMsg._id, role: "bot", text: botReply });
             } catch (err) {
                 console.error("send_message error:", err);
-                io.to(chatId).emit("bot_typing", false);
-                io.to(chatId).emit("error_message", "Something went wrong. Please try again.");
+                socket.emit("bot_typing", false);
+                socket.emit("error_message", "Something went wrong. Please try again.");
             }
         });
 

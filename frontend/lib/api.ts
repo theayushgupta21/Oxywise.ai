@@ -1,5 +1,22 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
+export async function getMeApi(token: string) {
+    const res = await fetch(`${API_URL}/api/auth/me`, {
+        method: "GET",
+        headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+        },
+    });
+
+    if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || "Session expired");
+    }
+
+    return res.json();
+}
+
 export async function googleAuthApi(idToken: string) {
     const res = await fetch(`${API_URL}/api/auth/google`, {
         method: "POST",
@@ -12,7 +29,7 @@ export async function googleAuthApi(idToken: string) {
         throw new Error(err.message || "Google authentication failed");
     }
 
-    return res.json(); // { token, user }
+    return res.json();
 }
 
 export async function loginApi(email: string, password: string) {

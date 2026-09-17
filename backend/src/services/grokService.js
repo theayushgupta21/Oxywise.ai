@@ -2,13 +2,20 @@ import OpenAI from "openai";
 import { retrieveRelevantKnowledge } from "./ragService.js";
 
 let client = null;
+let clientApiKey = null;
 
 function getClient() {
-    if (!client) {
+    const apiKey = process.env.GROQ_API_KEY?.trim().replace(/^("|')(.*)\1$/, "$2");
+    if (!apiKey) {
+        throw new Error("GROQ_API_KEY is missing or empty at Groq client creation time");
+    }
+
+    if (!client || clientApiKey !== apiKey) {
         client = new OpenAI({
-            apiKey: process.env.GROQ_API_KEY,
+            apiKey,
             baseURL: "https://api.groq.com/openai/v1",
         });
+        clientApiKey = apiKey;
     }
     return client;
 }
@@ -30,7 +37,7 @@ Matched plants: ${matchedPlants?.length ? JSON.stringify(matchedPlants) : "none"
     `.trim();
 
     const response = await getClient().chat.completions.create({
-        model: "llama-3.3-70b-versatile",
+        model: process.env.GROQ_MODEL || "openai/gpt-oss-120b",
         messages: [
             { role: "system", content: SYSTEM_PROMPT },
             { role: "system", content: contextBlock },

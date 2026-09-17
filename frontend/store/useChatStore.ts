@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { io, Socket } from "socket.io-client";
 
 export type Role = "user" | "bot";
 
@@ -25,13 +26,16 @@ interface ChatState {
     isLoadingHistory: boolean;
 
     input: string;
+    city: string;
     imageFile: File | null;
     docFile: File | null;
     locationOn: boolean;
     weatherOn: boolean;
 
+    connect: () => void;
     fetchHistory: () => Promise<void>;
     setInput: (text: string) => void;
+    setCity: (city: string) => void;
     sendMessage: (prefill?: string) => void;
     startNewChat: () => void;
     loadChat: (id: string) => void;
@@ -63,6 +67,75 @@ function titleFromText(text: string) {
     return trimmed.length > 42 ? trimmed.slice(0, 42) + "…" : trimmed;
 }
 
+function createId() {
+    const cryptoObj = typeof globalThis !== "undefined" ? globalThis.crypto : undefined;
+    if (cryptoObj && typeof cryptoObj.randomUUID === "function") {
+        return cryptoObj.randomUUID();
+    }
+    return `id-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+function isMongoId(value: string) {
+    return /^[a-f\d]{24}$/i.test(value);
+}
+
+let socketClient: Socket | null = null;
+
+function getSocketClient() {
+    if (typeof window === "undefined") return null;
+
+    if (!socketClient) {
+        const token = localStorage.getItem("token");
+        if (!token) return null;
+
+        socketClient = io(process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:5000", {
+            auth: { token },
+            transports: ["websocket", "polling"],
+            reconnection: true,
+        });
+
+        socketClient.on("connect", () => {
+            const { activeChatId } = useChatStore.getState();
+            if (isMongoId(activeChatId)) {
+                socketClient?.emit("join_chat", { chatId: activeChatId });
+            }
+        });
+
+        socketClient.on("receive_message", (message) => {
+            const nextMessage = {
+                id: String(message.id ?? createId()),
+                role: message.role === "bot" ? "bot" : "user",
+                text: message.text,
+            } as Message;
+
+            useChatStore.setState((state) => ({
+                messages: [...state.messages, nextMessage],
+                isTyping: false,
+            }));
+        });
+
+        socketClient.on("chat_created", ({ clientChatId, chatId }) => {
+            useChatStore.setState((state) => ({
+                activeChatId: chatId,
+                history: state.history.map((item) =>
+                    item.id === clientChatId ? { ...item, id: chatId } : item
+                ),
+            }));
+        });
+
+        socketClient.on("bot_typing", (typing) => {
+            useChatStore.setState({ isTyping: !!typing });
+        });
+
+        socketClient.on("error_message", (message) => {
+            useChatStore.setState({ isTyping: false });
+            console.error("Socket error:", message);
+        });
+    }
+
+    return socketClient;
+}
+
 export const useChatStore = create<ChatState>((set, get) => ({
     messages: [],
     history: [],
@@ -71,10 +144,21 @@ export const useChatStore = create<ChatState>((set, get) => ({
     sidebarOpen: false,
     isLoadingHistory: false,
     input: "",
+    city: "",
     imageFile: null,
     docFile: null,
     locationOn: false,
     weatherOn: false,
+
+    connect: () => {
+        const client = getSocketClient();
+        if (!client) return;
+
+        const { activeChatId } = get();
+        if (isMongoId(activeChatId)) {
+            client.emit("join_chat", { chatId: activeChatId });
+        }
+    },
 
     // 🔧 DB-ready: call this on mount to load real chat history
     // Replace the mock array below with: const res = await fetch("/api/chats"); const data = await res.json();
@@ -82,13 +166,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
         set({ isLoadingHistory: true });
         try {
             // --- MOCK DATA (remove once backend is ready) ---
-            const mock: ChatHistoryItem[] = [
-                { id: "1", title: "Balcony plant suggestions", group: "Today", updatedAt: Date.now() },
-                { id: "2", title: "Snake plant watering schedule", group: "Today", updatedAt: Date.now() - 1000 },
-                { id: "3", title: "Birthday gift plant ideas", group: "Yesterday", updatedAt: Date.now() - 90000 },
-                { id: "4", title: "Bengaluru monsoon plant care", group: "Previous 7 days", updatedAt: Date.now() - 500000 },
-            ];
-            set({ history: mock, activeChatId: mock[0]?.id ?? "" });
+            set({ history: [], activeChatId: "" });
             // --- END MOCK ---
         } finally {
             set({ isLoadingHistory: false });
@@ -96,23 +174,31 @@ export const useChatStore = create<ChatState>((set, get) => ({
     },
 
     setInput: (text) => set({ input: text }),
+    setCity: (city) => set({ city: city.trimStart() }),
 
     sendMessage: (prefill) => {
-        const { input, imageFile, docFile, messages, activeChatId, history } = get();
+        const { input, city, imageFile, docFile, messages, activeChatId, history, locationOn, weatherOn } = get();
         const text = (prefill ?? input).trim();
         if (!text && !imageFile && !docFile) return;
 
-        const userMsg: Message = { id: crypto.randomUUID(), role: "user", text: text || "(sent with attachment)" };
+        const chatId = activeChatId || createId();
+        const safeCity = city.trim();
+
+        if (!activeChatId) {
+            set({ activeChatId: chatId });
+        }
+
+        const userMsg: Message = { id: createId(), role: "user", text: text || "(sent with attachment)" };
         const isFirstMessage = messages.length === 0;
 
         set({ messages: [...messages, userMsg], input: "", imageFile: null, docFile: null, isTyping: true });
 
         // If this is a brand-new chat (no history entry yet), create one now — title comes from first message
-        if (isFirstMessage && activeChatId) {
-            const alreadyExists = history.some((h) => h.id === activeChatId);
+        if (isFirstMessage && chatId) {
+            const alreadyExists = history.some((h) => h.id === chatId);
             if (!alreadyExists) {
                 const newItem: ChatHistoryItem = {
-                    id: activeChatId,
+                    id: chatId,
                     title: titleFromText(text),
                     group: "Today",
                     updatedAt: Date.now(),
@@ -122,10 +208,23 @@ export const useChatStore = create<ChatState>((set, get) => ({
             }
         }
 
+        const socketClient = getSocketClient();
+        if (socketClient && socketClient.connected) {
+            socketClient.emit("send_message", {
+                chatId,
+                text,
+                city: safeCity || undefined,
+                weatherOn,
+                locationOn,
+                spaceType: "indoor",
+            });
+            return;
+        }
+
         // 🔧 Replace this whole block with a real API/WebSocket call to your backend
         setTimeout(() => {
             const reply = getBotReply(text);
-            const botMsg: Message = { id: crypto.randomUUID(), role: "bot", text: reply.text, card: reply.card };
+            const botMsg: Message = { id: createId(), role: "bot", text: reply.text, card: reply.card };
             set((state) => ({ messages: [...state.messages, botMsg], isTyping: false }));
             // 🔧 DB-ready: POST /api/chats/:id/messages { userMsg, botMsg }
         }, 700);
@@ -133,13 +232,23 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
     startNewChat: () => {
         // generate a fresh chat id up front so the first message can attach to it
-        const newId = crypto.randomUUID();
-        set({ messages: [], activeChatId: newId, sidebarOpen: false });
+        const newId = createId();
+        set({ messages: [], activeChatId: newId, sidebarOpen: false, city: "" });
+
+        const socketClient = getSocketClient();
+        if (socketClient && isMongoId(newId)) {
+            socketClient.emit("join_chat", { chatId: newId });
+        }
         // 🔧 DB-ready: optionally POST /api/chats to reserve the chat before the first message
     },
 
     loadChat: (id) => {
-        set({ activeChatId: id, sidebarOpen: false, messages: [] });
+        set({ activeChatId: id, sidebarOpen: false, messages: [], city: "" });
+
+        const socketClient = getSocketClient();
+        if (socketClient && isMongoId(id)) {
+            socketClient.emit("join_chat", { chatId: id });
+        }
         // 🔧 DB-ready: fetch(`/api/chats/${id}/messages`) → set({ messages: data })
     },
 

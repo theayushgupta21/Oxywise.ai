@@ -11,10 +11,6 @@ export default function Approutes() {
             <Herosection />
             <Threestepsuses />
             <Footer />
-
-
-
-
         </div>
     )
 }
