@@ -1,110 +1,91 @@
 # 🌿 Oxywise.ai
 
-> Smart, AI-powered plant and greenery suggestions to make your home greener  personalized by weather, location, and atmosphere.
+Oxywise.ai is an AI-powered plant recommendation platform that helps users choose the right greenery for their home based on location, weather, climate, and lifestyle. The project combines a Next.js frontend with a Node.js/Express backend, MongoDB data storage, and AI-powered plant suggestions.
 
-## About
+## Overview
 
-Oxywise.ai helps users turn their homes into green, breathable spaces. Using AI, it recommends the right seeds, plants, and flower pots based on the user's **location**, **weather conditions**, and **local atmosphere/climate**, and guides them on how to care for their plants  helping reduce CO2 and improve air quality at home.
+The app is designed to help people:
 
-## Problem
+- choose plants that fit their local climate and home conditions
+- receive personalized plant-care guidance
+- use weather-aware recommendations for healthier greenery
+- interact with a chatbot for plant and home-environment advice
 
-Most people want to add greenery to their homes but don't know:
-- Which plants suit their local climate and weather
-- How much sunlight, water, or care a plant actually needs
-- What to gift someone for a plant-based occasion (birthday, housewarming, etc.)
+## Features
 
-Oxywise.ai solves this with smart, personalized, AI-driven suggestions.
-
-## Core Features (Phase 1)
-
-- 🌱 **Plant & seed suggestions** — recommendations based on location, weather, and atmosphere
-- 💧 **Care schedule** — daily / occasional / alternate-day care reminders per plant
-- 📍 **Location-based recommendations** — climate-aware suggestions for the user's region
-- 🌤️ **Weather-based guidance** — adjusts care tips dynamically as weather changes
-
-## Planned Features (Future Phases)
-
-- 🌍 CO2 / oxygen impact tracker  show how much a user's plants are helping the environment
-- 🔔 Push notification reminders for watering, fertilizing, repotting
-- 📷 AI-based plant health diagnosis from photos
-- 🏡 Space-based suggestions (balcony, indoor, terrace, small apartment)
-- 🎁 Occasion-based plant/flower gifting suggestions
-- 👥 Community sharing  users showcase their "green home journey"
-
-## Brand Theme
-
-| Color | Hex | Purpose |
-|---|---|---|
-| Primary Green | `#639922` | Growth, care, accomplishment |
-| Ocean Blue | `#185FA5` | Trust, weather-based features |
-| Warm Amber | `#EF9F27` | Streaks, rewards, milestones |
-| Sage Base | `#EAF3DE` | Background, calm daily-use feel |
+- AI-assisted plant suggestions based on user input and conditions
+- Weather-aware and location-aware recommendations
+- Authentication and user management
+- Chat support for plant guidance and care questions
+- Real-time socket-based chat experience
+- MongoDB-backed persistence for users, chats, and plant-related data
 
 ## Tech Stack
 
-- **Frontend**: Next.js (App Router) + React + TypeScript
-- **Styling**: Tailwind CSS
-- **Animation**: Framer Motion
-- **Icons**: lucide-react
-- **Fonts**: Gelasio (display/heading), via `next/font/google`
-- **Backend**: TBD
-- **AI/ML**: TBD
-- **Database**: TBD
+- Frontend: Next.js + React + TypeScript
+- Styling: Tailwind CSS
+- Backend: Node.js + Express
+- Database: MongoDB + Mongoose
+- AI: Groq/OpenAI-compatible integration
+- Real-time layer: Socket.IO
+- Auth: JWT + Google OAuth
 
-## Brand Theme
+## Project Structure
 
-| Color | Tailwind / Hex | Purpose |
-|---|---|---|
-| Primary Green | `green-700` · `#639922` | Growth, care, accomplishment |
-| Ocean Blue | `#185FA5` | Trust, weather-based features |
-| Warm Amber | `#EF9F27` | Streaks, rewards, milestones |
-| Sage / Green-50 Base | `#EAF3DE` | Background, calm daily-use feel |
-
-## Project Structure (Frontend)
-
-```
-frontend/
-├── app-routes/
-│   └── Approutes.tsx
-├── components/
-│   └── layouts/
-│       ├── Navbar.tsx
-│       ├── Footer.tsx
-├── Oxywisestartbox.tsx
-├── views/
-│   ├── Chatbot.tsx  
-│   ├── Home.tsx
-│   ├── Herosection.tsx
-│   ├── Threestepsuses.tsx      # "how it works" — 3 step process
-│   ├── Features.tsx             # feature grid
-│   ├── Cards.tsx
-├── chat/
-    ├── ChatWindow.tsx
-    ├── InputBar.tsx
-    ├── Sidebar.tsx
-├── app/
-    ├── layout.tsx
-    ├── page.tsx
-    ├── globals.css
-└── chatbot/
-    ├──page.tsx
-├──store/
-    └── useChatStore.ts  
-
-
- 
+```bash
+oxywise.Ai/
+├── backend/
+│   ├── src/
+│   ├── routes/
+│   ├── .env.example (if present locally)
+│   ├── package.json
+│   └── README.md
+├── frontend/
+│   ├── app/
+│   ├── components/
+│   ├── lib/
+│   ├── store/
+│   ├── views/
+│   └── package.json
+├── README.md
+└── OxywiseApp/
+    ├── OxywisebackendApp/
+    └── OxywisefrontendApp/
 ```
 
-## Landing Page — Sections Built So Far
+## Environment Setup
 
-- ✅ **Navbar** — logo, nav links, login/sign up
-- ✅ **Hero section** — headline, live weather-sync badge, CTA, animated plant-match visual
-- ✅ **How it works** — 3-step process (location → weather match → care plan), horizontal layout with scroll on mobile
-- ✅ **Features** — smart suggestions, weather-synced care, CO2 tracker, occasion gifting
-- ✅ **CTA band** — "Your home is one plant away from greener air"
-- ✅ **Footer** — logo + copyright, tagline
+Create a backend environment file at `backend/.env` with the required variables:
+
+```env
+PORT=5000
+MONGODB_URI=mongodb://localhost:27017/oxywise
+JWT_SECRET=your_jwt_secret
+GOOGLE_CLIENT_ID=your_google_client_id
+GROQ_API_KEY=your_groq_api_key
+```
+
+Important notes:
+
+- the backend validates required variables on startup
+- `GROQ_API_KEY` must be present and cannot contain whitespace
+- the app loads the `.env` file from the backend directory automatically
 
 ## Getting Started
+
+### 1) Backend
+
+```bash
+cd backend
+npm install
+npm run dev
+```
+
+The backend server runs on:
+
+- http://localhost:5000
+
+### 2) Frontend
 
 ```bash
 cd frontend
@@ -112,14 +93,36 @@ npm install
 npm run dev
 ```
 
-App runs at `http://localhost:3000` by default.
+The frontend app runs on:
 
-> ⚠️ If you see a "slow filesystem" warning in dev mode, make sure the project lives on a local drive (not a network drive or a cloud-synced folder like OneDrive/Google Drive).
+- http://localhost:3000
+
+## Scripts
+
+### Backend
+
+```bash
+npm run dev   # runs with nodemon
+npm run start # runs the production server
+```
+
+### Frontend
+
+```bash
+npm run dev
+npm run build
+npm run start
+npm run lint
+```
 
 ## Status
 
-🚧 In development  landing page frontend (hero, how-it-works, features, CTA, footer) is built. Backend, AI logic, and auth are not started yet.
+The project is actively under development and includes both frontend and backend foundations, user authentication, chat, and AI-powered recommendation support.
 
 ## License
 
-TBD
+This project is currently under active development and does not yet declare a final public license.
+
+---
+
+For backend-specific setup details, see [backend/README.md](backend/README.md).
