@@ -1,4 +1,34 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+const API_URL = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000").replace(/\/$/, "");
+
+type AuthResponse = {
+    token: string;
+    user: {
+        id: string;
+        name: string;
+        email: string;
+        avatar?: string;
+        authProvider?: "local" | "google";
+    };
+};
+
+type MeResponse = Pick<AuthResponse, "user">;
+
+async function readResponse<T>(res: Response, fallbackMessage: string): Promise<T> {
+    const contentType = res.headers.get("content-type") || "";
+    const body = contentType.includes("application/json")
+        ? await res.json().catch(() => ({}))
+        : {};
+
+    if (!res.ok) {
+        throw new Error(body.message || `${fallbackMessage} (HTTP ${res.status})`);
+    }
+
+    if (!contentType.includes("application/json")) {
+        throw new Error("The API returned HTML instead of JSON. Check NEXT_PUBLIC_API_URL and make sure the backend is running.");
+    }
+
+    return body as T;
+}
 
 export async function getMeApi(token: string) {
     const res = await fetch(`${API_URL}/api/auth/me`, {
@@ -9,12 +39,7 @@ export async function getMeApi(token: string) {
         },
     });
 
-    if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.message || "Session expired");
-    }
-
-    return res.json();
+    return readResponse<MeResponse>(res, "Session expired");
 }
 
 export async function googleAuthApi(idToken: string) {
@@ -24,12 +49,7 @@ export async function googleAuthApi(idToken: string) {
         body: JSON.stringify({ idToken }),
     });
 
-    if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.message || "Google authentication failed");
-    }
-
-    return res.json();
+    return readResponse<AuthResponse>(res, "Google authentication failed");
 }
 
 export async function loginApi(email: string, password: string) {
@@ -39,12 +59,7 @@ export async function loginApi(email: string, password: string) {
         body: JSON.stringify({ email, password }),
     });
 
-    if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.message || "Login failed");
-    }
-
-    return res.json();
+    return readResponse<AuthResponse>(res, "Login failed");
 }
 
 export async function signupApi(name: string, email: string, password: string) {
@@ -54,10 +69,5 @@ export async function signupApi(name: string, email: string, password: string) {
         body: JSON.stringify({ name, email, password }),
     });
 
-    if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.message || "Signup failed");
-    }
-
-    return res.json();
+    return readResponse<AuthResponse>(res, "Signup failed");
 }
