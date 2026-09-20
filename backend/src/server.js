@@ -6,9 +6,9 @@ import crypto from "node:crypto";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const envPath = path.resolve(__dirname, "../.env");
-const envResult = dotenv.config({ path: envPath, override: true });
+const envResult = dotenv.config({ path: envPath });
 
-if (envResult.error) {
+if (envResult.error && envResult.error.code !== "ENOENT") {
     throw new Error(`Unable to load environment file at ${envPath}: ${envResult.error.message}`);
 }
 
