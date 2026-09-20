@@ -18,6 +18,7 @@ The app is designed to help people:
 - Authentication and user management
 - Chat support for plant guidance and care questions
 - Real-time socket-based chat experience
+- Authenticated chatbot profile menu with home, profile, and logout actions
 - MongoDB-backed persistence for users, chats, and plant-related data
 
 ## Tech Stack
@@ -69,7 +70,36 @@ Important notes:
 
 - the backend validates required variables on startup
 - `GROQ_API_KEY` must be present and cannot contain whitespace
-- the app loads the `.env` file from the backend directory automatically
+- the app loads `backend/.env` automatically for local development
+- deployment-provided environment variables are preserved and take precedence over local `.env` values
+
+### Frontend environment variables
+
+For local development, create `frontend/.env.local`:
+
+```env
+NEXT_PUBLIC_API_URL=http://localhost:5000
+NEXT_PUBLIC_SOCKET_URL=http://localhost:5000
+NEXT_PUBLIC_GOOGLE_CLIENT_ID=your_google_client_id
+```
+
+For Vercel, configure these variables in the project settings and redeploy after changing them:
+
+```env
+NEXT_PUBLIC_API_URL=https://your-public-railway-domain
+NEXT_PUBLIC_SOCKET_URL=https://your-public-railway-domain
+NEXT_PUBLIC_GOOGLE_CLIENT_ID=your_google_client_id
+```
+
+The API and Socket.IO URLs must include `https://` in production and must point to the public Railway domain. Do not use a Railway internal hostname or append `/api`; the frontend adds the `/api` path itself.
+
+For Railway, configure:
+
+```env
+CLIENT_URL=https://your-vercel-domain
+```
+
+This origin must match the deployed frontend URL so browser API requests and Socket.IO connections pass CORS checks.
 
 ## Getting Started
 
@@ -118,6 +148,12 @@ npm run lint
 ## Status
 
 The project is actively under development and includes both frontend and backend foundations, user authentication, chat, and AI-powered recommendation support.
+
+## AI Agent Workflow
+
+Repository-wide AI coding and production-debugging guidance is documented in [AGENTS.md](AGENTS.md). It defines a level-by-level process for analyzing requests, tracing Vercel-to-Railway failures, checking authentication and Socket.IO configuration, making minimal changes, and tracking evidence without exposing secrets.
+
+Use the reusable analysis and tracking prompts in that guide when investigating a new issue. Frontend and mobile work should also follow their scoped guidance in [frontend/AGENTS.md](frontend/AGENTS.md) and [OxywiseApp/OxywisefrontendApp/AGENTS.md](OxywiseApp/OxywisefrontendApp/AGENTS.md).
 
 ## License
 
