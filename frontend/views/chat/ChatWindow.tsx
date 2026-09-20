@@ -1,7 +1,9 @@
 "use client";
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useChatStore } from "@/store/useChatStore";
 import { Leaf, Menu } from "lucide-react";
+import Link from "next/link";
+import { useAuth } from "@/components/providers/AuthProvider";
 
 const quickPrompts = [
     "Suggest a plant for my balcony",
@@ -11,6 +13,8 @@ const quickPrompts = [
 
 export default function ChatWindow() {
     const { messages, isTyping, sendMessage, toggleSidebar } = useChatStore();
+    const { user, logout } = useAuth();
+    const [menuOpen, setMenuOpen] = useState(false);
     const bottomRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -19,6 +23,40 @@ export default function ChatWindow() {
 
     return (
         <div className="flex-1 flex flex-col min-w-0">
+
+            {/* Desktop profile control */}
+            {user && (
+                <div className="fixed right-4 top-3 z-50 hidden md:block">
+                    <button
+                        type="button"
+                        onClick={() => setMenuOpen((open) => !open)}
+                        className="flex items-center gap-2 rounded-full border border-green-700 bg-white px-3 py-2 text-sm font-semibold text-green-700 shadow-sm"
+                        aria-label="Open profile menu"
+                    >
+                        <span className="flex h-7 w-7 items-center justify-center rounded-full bg-green-700 text-xs text-white">
+                            {user.name?.[0]?.toUpperCase() || "U"}
+                        </span>
+                        <span>{user.name.split(" ")[0]}</span>
+                    </button>
+
+                    {menuOpen && (
+                        <div className="absolute right-0 top-12 z-50 w-48 rounded-2xl border border-green-100 bg-white p-2 shadow-xl">
+                            <Link href="/profile" className="block rounded-xl px-3 py-2 text-sm text-gray-700 hover:bg-green-50">Profile</Link>
+                            <Link href="/" className="block rounded-xl px-3 py-2 text-sm text-gray-700 hover:bg-green-50">Home</Link>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    logout();
+                                    setMenuOpen(false);
+                                }}
+                                className="mt-1 block w-full rounded-xl px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50"
+                            >
+                                Logout
+                            </button>
+                        </div>
+                    )}
+                </div>
+            )}
 
             {/* Mobile top bar */}
             <div className="md:hidden flex items-center justify-between px-4 py-3 border-b border-[#DEE6D2] bg-white">
@@ -29,8 +67,34 @@ export default function ChatWindow() {
                     <Menu size={18} />
                 </button>
                 <span className="font-semibold">oxywise.ai</span>
-                <div className="w-9" />
+                {user ? (
+                    <button
+                        type="button"
+                        onClick={() => setMenuOpen((open) => !open)}
+                        className="flex h-9 w-9 items-center justify-center rounded-full bg-green-700 text-xs font-semibold text-white"
+                        aria-label="Open profile menu"
+                    >
+                        {user.name?.[0]?.toUpperCase() || "U"}
+                    </button>
+                ) : <div className="w-9" />}
             </div>
+
+            {menuOpen && user && (
+                <div className="fixed right-4 top-14 z-50 w-48 rounded-2xl border border-green-100 bg-white p-2 shadow-xl md:hidden">
+                    <Link href="/profile" className="block rounded-xl px-3 py-2 text-sm text-gray-700 hover:bg-green-50">Profile</Link>
+                    <Link href="/" className="block rounded-xl px-3 py-2 text-sm text-gray-700 hover:bg-green-50">Home</Link>
+                    <button
+                        type="button"
+                        onClick={() => {
+                            logout();
+                            setMenuOpen(false);
+                        }}
+                        className="mt-1 block w-full rounded-xl px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50"
+                    >
+                        Logout
+                    </button>
+                </div>
+            )}
 
             <div className="flex-1 overflow-y-auto">
                 <div className="max-w-[760px] mx-auto px-6 pt-6">

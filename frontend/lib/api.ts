@@ -1,4 +1,8 @@
-const API_URL = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000").replace(/\/$/, "");
+const configuredApiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+const API_URL = (/^https?:\/\//i.test(configuredApiUrl)
+    ? configuredApiUrl
+    : `${configuredApiUrl.startsWith("localhost") ? "http" : "https"}://${configuredApiUrl}`
+).replace(/\/$/, "");
 
 type AuthResponse = {
     token: string;

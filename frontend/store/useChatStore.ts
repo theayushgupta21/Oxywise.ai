@@ -88,7 +88,12 @@ function getSocketClient() {
         const token = localStorage.getItem("token");
         if (!token) return null;
 
-        socketClient = io(process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:5000", {
+        const configuredSocketUrl = process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:5000";
+        const socketUrl = /^https?:\/\//i.test(configuredSocketUrl)
+            ? configuredSocketUrl
+            : `${configuredSocketUrl.startsWith("localhost") ? "http" : "https"}://${configuredSocketUrl}`;
+
+        socketClient = io(socketUrl, {
             auth: { token },
             transports: ["websocket", "polling"],
             reconnection: true,
